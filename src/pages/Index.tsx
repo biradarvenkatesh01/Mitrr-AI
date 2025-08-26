@@ -12,6 +12,8 @@ interface Message {
   timestamp: Date;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -44,28 +46,36 @@ const Index = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponses = [
-        "That's an interesting question! Let me help you with that.",
-        "I understand what you're asking. Here's what I think...",
-        "Great question! I'd be happy to assist you with that.",
-        "Let me process that for you. Based on what you've shared...",
-        "I can definitely help with that! Here's my perspective...",
-      ];
-      
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-      
+    try {
+      const response = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: messageText }),
+      });
+      const data = await response.json();
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: randomResponse,
+        text: data.message,
         isUser: false,
         timestamp: new Date(),
       };
       
       setMessages(prev => [...prev, aiMessage]);
       setIsTyping(false);
-    }, 1500 + Math.random() * 1000);
+    } catch (error) {
+      console.error("Failed to fetch from API:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Sorry, I am unable to connect to the AI at the moment. Please try again later.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setIsTyping(false);
+    }
   };
 
   return (
